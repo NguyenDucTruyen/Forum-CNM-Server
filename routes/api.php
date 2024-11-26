@@ -37,6 +37,7 @@ Route::prefix('auth')->group(function () {
     #route start
     Route::post('/register', [UserController::class, 'register']);
     Route::post('/login', [UserController::class, 'login']);
+    Route::post('/google-login', [GoogleAuthController::class, 'loginWithGoogleToken']);
     Route::get('/email/verify/{id}/{hash}', [UserController::class, 'verifyEmail'])->name('verification.verify');
     Route::post('/resend-verification', [UserController::class, 'resendVerificationEmail']);
 
