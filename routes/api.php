@@ -28,84 +28,92 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 });
 
 
-//check role
-//->middleware(['role:admin'])
-Route::get('/getAll', [UserController::class, 'getAll'])->middleware(['auth:api', 'refresh.token', 'role:admin']);
+
 
 //Auth Verify Email
 Route::prefix('auth')->group(function () {
     #route start
     Route::post('/register', [UserController::class, 'register']);
+    Route::post('/sendOtp',[UserController::class,'sendOTP']);
+
     Route::post('/login', [UserController::class, 'login']);
     Route::post('/google-login', [GoogleAuthController::class, 'loginWithGoogleToken']);
     Route::get('/email/verify/{id}/{hash}', [UserController::class, 'verifyEmail'])->name('verification.verify');
     Route::post('/resend-verification', [UserController::class, 'resendVerificationEmail']);
+    Route::put('/update',[UserController::class,'update'])->middleware(['auth:api']);
 
-    Route::put('/update',[UserController::class,'update'])->middleware(['auth:api', 'refresh.token']);
-
-    Route::get('/getDetail/{id}',[UserController::class,'detail'])->middleware(['auth:api', 'refresh.token']);
+    Route::get('/getDetail/{id}',[UserController::class,'detail'])->middleware(['auth:api']);
 
     //Logout
     Route::post('/logout', [UserController::class, 'logout'])->middleware('auth:api');
 });
 
+//Refresh TOKEN
+Route::get('/refreshToken',[UserController::class,'refreshToken']);
+
+
 
 //Forgot pass
 #route start
 Route::post('forgot-password', [UserController::class, 'forgotPassword']);
-
-Route::get('show-form', function () {
-    return view('resetPass');
-})->name('password.reset');
-
-Route::post('reset-password', [UserController::class, 'resetPassword'])->name('password.update');
+Route::post('reset-password', [UserController::class, 'resetPassword']);
 
 
 //CRUD category
-Route::post('/createCategory',[CategoryController::class,'createCategory'])->middleware(['auth:api', 'refresh.token']);
-Route::put('/updateCategory/{id}',[CategoryController::class,'updateCategory'])->middleware(['auth:api', 'refresh.token']);
-Route::get('/getListCategory',[CategoryController::class,'listCategory'])->middleware(['auth:api', 'refresh.token']);
-Route::delete('/deleteCategory/{id}',[CategoryController::class,'destroyCategory'])->middleware(['auth:api', 'refresh.token']);
+Route::get('/getListCategory',[CategoryController::class,'listCategory'])->middleware(['auth:api']);
 
 
 //CRUD blog
-Route::post('/createBlog',[BlogController::class,'createBlog'])->middleware(['auth:api', 'refresh.token']);
-Route::put('/updateBlog/{id}',[BlogController::class,'updateBlog'])->middleware(['auth:api', 'refresh.token']);
-Route::delete('/deleteBlog/{id}',[BlogController::class,'destroyBlog'])->middleware(['auth:api', 'refresh.token']);
-#get all blog
-Route::get('/getListBlog',[BlogController::class,'listBlog'])->middleware(['auth:api', 'refresh.token']);
-#get blog by ID category
-Route::get('/getBlogCategory/{id}',[BlogController::class,'listBlogCategory'])->middleware(['auth:api', 'refresh.token']);
-#get blog by ID user
-Route::get('/getBlogUser/{id}',[BlogController::class,'listBlogUser'])->middleware(['auth:api', 'refresh.token']);
-#get deleted blog
-Route::get('/getBlogUserDeleted',[BlogController::class,'listBlogUserDeleted'])->middleware(['auth:api', 'refresh.token']);
+Route::post('/createBlog',[BlogController::class,'createBlog'])->middleware(['auth:api']);
+Route::put('/updateBlog/{id}',[BlogController::class,'updateBlog'])->middleware(['auth:api']);
+Route::delete('/deleteBlog/{id}',[BlogController::class,'destroyBlog'])->middleware(['auth:api']);
+
+#get all blog + search + paginate
+Route::get('/getListBlog',[BlogController::class,'listBlog'])->middleware(['auth:api']);
+#get blog by ID category + search + paginte
+Route::get('/getBlogCategory/{id}',[BlogController::class,'listBlogCategory'])->middleware(['auth:api']);
+#get blog by ID user + search + paginate
+Route::get('/getBlogUser/{id}',[BlogController::class,'listBlogUser'])->middleware(['auth:api']);
+#get deleted blog + search + paginate
+Route::get('/getBlogUserDeleted',[BlogController::class,'listBlogUserDeleted'])->middleware(['auth:api']);
+
+#get detail blog by id blog
+Route::get('/getDetailBlog/{id}',[BlogController::class,'detailBlog'])->middleware(['auth:api']);
 
 
 // CRUD comment
-Route::post('/createComment',[CommentController::class,'createComment'])->middleware(['auth:api', 'refresh.token']);
-Route::put('/updateComment/{id}',[CommentController::class,'updateComment'])->middleware(['auth:api', 'refresh.token']);
-Route::delete('/deleteComment/{id}',[CommentController::class,'destroyComment'])->middleware(['auth:api', 'refresh.token']);
+Route::post('/createComment',[CommentController::class,'createComment'])->middleware(['auth:api']);
+Route::put('/updateComment/{id}',[CommentController::class,'updateComment'])->middleware(['auth:api']);
+Route::delete('/deleteComment/{id}',[CommentController::class,'destroyComment'])->middleware(['auth:api']);
 #get comment by ID Blog include reply :) 
-Route::get('/getCommentBlog/{id}',[CommentController::class,'listCommentBlog'])->middleware(['auth:api', 'refresh.token']);
+Route::get('/getCommentBlog/{id}',[CommentController::class,'listCommentBlog'])->middleware(['auth:api']);
 
 
 //CRUD reply
-Route::post('/createReply',[ReplyController::class,'createReply'])->middleware(['auth:api', 'refresh.token']);
-Route::put('/updateReply/{id}',[ReplyController::class,'updateReply'])->middleware(['auth:api', 'refresh.token']);
-Route::delete('/deleteReply/{id}',[ReplyController::class,'destroyReply'])->middleware(['auth:api', 'refresh.token']);
+Route::post('/createReply',[ReplyController::class,'createReply'])->middleware(['auth:api']);
+Route::put('/updateReply/{id}',[ReplyController::class,'updateReply'])->middleware(['auth:api']);
+Route::delete('/deleteReply/{id}',[ReplyController::class,'destroyReply'])->middleware(['auth:api']);
 
 //CRUD react
-Route::post('/likeReaction',[ReactionController::class,'likeReaction'])->middleware(['auth:api', 'refresh.token']);
-Route::post('/dislikeReaction',[ReactionController::class,'dislikeReaction'])->middleware(['auth:api', 'refresh.token']);
+Route::post('/likeReaction',[ReactionController::class,'likeReaction'])->middleware(['auth:api']);
+Route::post('/dislikeReaction',[ReactionController::class,'dislikeReaction'])->middleware(['auth:api']);
+#get Reaction by Blog ID
+Route::get('/getReactionBlog/{id}',[ReactionController::class,'listReactionBlog'])->middleware(['auth:api']);
 
 
 //ADMIN
-Route::put('/activeUser',[AdminController::class,'activeUser'])->middleware(['auth:api', 'refresh.token', 'role:admin']);
-
-#change status Blog// k cần thiết, chưa viết
-Route::put('/updateBlogStatus',[BlogController::class,'updateBlog'])->middleware(['auth:api', 'refresh.token', 'role:admin']);
+Route::put('/activeUser',[AdminController::class,'activeUser'])->middleware(['auth:api', 'role:admin']);
 
 // Stripe 
 Route::post('/create-checkout-session', [StripeController::class, 'createCheckoutSession']);
 Route::get('/checkout-session', [StripeController::class, 'getSessionDetails']);
+#get all user
+//->middleware(['role:admin'])
+Route::get('/getAll', [UserController::class, 'getAll'])->middleware(['auth:api', 'role:admin']);
+#category
+Route::post('/createCategory',[CategoryController::class,'createCategory'])->middleware(['auth:api', 'role:admin']);
+Route::put('/updateCategory/{id}',[CategoryController::class,'updateCategory'])->middleware(['auth:api', 'role:admin']);
+Route::delete('/deleteCategory/{id}',[CategoryController::class,'destroyCategory'])->middleware(['auth:api', 'role:admin']);
+
+#change status Blog// 
+Route::put('/updateBlogStatus/{id}',[BlogController::class,'updateStatusBlog'])->middleware(['auth:api', 'role:admin']);

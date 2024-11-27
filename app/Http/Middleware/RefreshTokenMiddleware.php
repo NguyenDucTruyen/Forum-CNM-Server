@@ -35,7 +35,7 @@ class RefreshTokenMiddleware
             if ($tokenModel) {
                 // Kiểm tra token có gần hết hạn 
                 $expiresAt = Carbon::parse($tokenModel->expires_at);
-                if (Carbon::now()->diffInMinutes($expiresAt) <= 60) {
+                if (Carbon::now()->diffInMinutes($expiresAt) <= 15) {
                     // Revoke token cũ
                     $tokenModel->revoke();
 

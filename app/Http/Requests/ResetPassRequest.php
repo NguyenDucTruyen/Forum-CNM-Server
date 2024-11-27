@@ -24,9 +24,9 @@ class ResetPassRequest extends FormRequest
     public function rules()
     {
         return [
-            'email' => ['required', 'email', 'exists:users,email'],
-            'token' => 'required|string',
-            'password' => 'required|string|min:8|confirmed',
+            'email' => ['required', 'email'],
+            'otp' => 'required|size:6',
+            'password' => 'required|string|min:8|',
         ];
     }
 
@@ -34,11 +34,11 @@ class ResetPassRequest extends FormRequest
     {
         return [
             'email.required' => 'Please enter your email',
-            'email.exists' => 'Email is incorrect',
             'email.email' =>'Please enter the correct email format',
             'password.required' => 'PLease enter your password',
             'password.min' => 'PLease enter more than 8 character',
-            'token.required'=>'Token is null'
+            'otp.required'=>'OTP is null',
+            'otp.size'=>'OTP is 6 character'
         ];
     }
 }

@@ -29,7 +29,6 @@ class AddRequest extends FormRequest
             'title' => ['required'],
             'content' => ['required'],
             'blogImage' => ['sometimes'],
-            'statusBlog' => ['sometimes']
         ];
     }
 
