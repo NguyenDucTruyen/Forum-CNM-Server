@@ -31,6 +31,7 @@ class GoogleAuthController extends Controller
                     'lastName' => $googleUser->getName(),
                     'email' => $googleUser->getEmail(),
                     'google_id' => $googleUser->getId(),
+                    'profileImage' => $googleUser->getAvatar(),
                 ]);
             }
 
