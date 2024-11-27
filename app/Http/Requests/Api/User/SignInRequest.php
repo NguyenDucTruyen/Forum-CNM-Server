@@ -29,7 +29,8 @@ class SignInRequest extends FormRequest
             'firstName'=> ['required'],
             'lastName'=>['required'],
             'email'=>['required','email','unique:users,email'],
-            'password'=>['required','min:8']
+            'password'=>['required','min:8'],
+            'otp'=>['required']
         ];
     }
     //customize err
@@ -41,7 +42,8 @@ class SignInRequest extends FormRequest
             'email.email' =>'Please enter the correct email format',
             'email.required'=>'Please enter your email',
             'password.required'=>'PLease enter your password',
-            'password.min'=> 'PLease enter more than 8 character'
+            'password.min'=> 'PLease enter more than 8 character',
+            'otp.required'=> 'Please enter your OTP code'
         ];
     }
 }

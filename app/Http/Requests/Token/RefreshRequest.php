@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Token;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class LoginRequest extends FormRequest
+class RefreshRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -24,19 +24,18 @@ class LoginRequest extends FormRequest
     public function rules()
     {
         return [
-            'email' => ['required', 'email','exists:users,email'],
-            'password' => ['required', 'min:8']
+            //
+            'access_token' => ['required'],
         ];
     }
 
     //customize err
     public function messages()
     {
-        return[
-            'email.required'=>'Please, enter your email',
-            'email.exists'=>'Email or Password is incorrect',
-            'password.required'=>'PLease, enter your password',
-            'password.min'=> 'Email or Password is incorrect'
+        return [
+
+            // Messages for content
+            'access_token.required' => 'The access_token is required',
         ];
     }
 }

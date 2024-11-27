@@ -6,13 +6,19 @@ use App\Http\Requests\Api\User\SignInRequest;
 use App\Http\Requests\Api\User\UpdateRequest;
 use App\Http\Requests\ForgetPassRequest;
 use App\Http\Requests\LoginRequest;
+use App\Http\Requests\OTP\OtpRequest;
 use App\Http\Requests\ResetPassRequest;
+use App\Http\Requests\Token\RefreshRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Service\UserService;
+use Carbon\Carbon;
 use Illuminate\Auth\Events\Validated;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Laravel\Passport\Bridge\RefreshToken;
 use Laravel\Passport\Token;
 
 class UserController extends Controller
@@ -50,6 +56,16 @@ class UserController extends Controller
             400
         );
     }
+
+    public function sendOTP(OtpRequest $otpRequest)
+    {
+        $params = $otpRequest->validated();
+
+        $result = $this->service->sendOTP($params);
+
+        return $result;
+    }
+
 
     //logIn
     public function logIn(LoginRequest $logInRequest)
@@ -171,6 +187,89 @@ class UserController extends Controller
             return response()->json([
                 'message' => 'User not found!'
             ], 404);
+        }
+    }
+
+
+    public function refreshToken(RefreshRequest $request)
+    {
+        $params = $request->validated();
+
+        try {
+            // Log toàn bộ token để kiểm tra
+            Log::info('Received Token: ' . $params['access_token']);
+
+            // Tìm token trong database
+            $tokenModel = DB::table('oauth_access_tokens')
+                ->where('id', hash('sha256', $params['access_token']))
+                ->orWhere('id', $params['access_token'])
+                ->first();
+
+            // Nếu không tìm thấy, thử decode token
+            if (!$tokenModel) {
+                try {
+                    $decoded = \Firebase\JWT\JWT::decode(
+                        $params['access_token'],
+                        new \Firebase\JWT\Key(
+                            file_get_contents(storage_path('oauth-public.key')),
+                            'RS256'
+                        )
+                    );
+
+                    // Tìm token theo thông tin từ decoded token
+                    $tokenModel = DB::table('oauth_access_tokens')
+                        ->where('user_id', $decoded->sub)
+                        ->first();
+                } catch (\Exception $e) {
+                    Log::error('Token decode error: ' . $e->getMessage());
+                }
+            }
+
+            if (!$tokenModel) {
+                return response()->json([
+                    "message" => "Token không tồn tại",
+                    "debug" => [
+                        "token_hash" => hash('sha256', $params['access_token']),
+                        "token_length" => strlen($params['access_token'])
+                    ]
+                ], 404);
+            }
+
+            // Lấy người dùng từ token
+            $user = User::find($tokenModel->user_id);
+
+            if (!$user) {
+                return response()->json([
+                    "message" => "Người dùng không tồn tại"
+                ], 404);
+            }
+
+            // Tạo token mới
+            $tokenName = $user->roleName == 'admin' ? 'Admin Access Token' : 'User Access Token';
+            $tokenScopes = $user->roleName == 'admin' ? ['role:admin'] : ['role:user'];
+
+            $newToken = $user->createToken($tokenName, $tokenScopes);
+
+            $newAccessToken = $newToken->accessToken;
+            $newTokenExpiry = $newToken->token->expires_at;
+
+            // Xóa token cũ
+            DB::table('oauth_access_tokens')
+                ->where('id', $tokenModel->id)
+                ->update(['revoked' => 1]);
+
+            return response()->json([
+                "message" => "Refresh token thành công",
+                "access_token" => $newAccessToken,
+                "expires_in" => $newTokenExpiry
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Refresh Token Error: ' . $e->getMessage());
+
+            return response()->json([
+                "message" => "Refresh token thất bại",
+                "error" => $e->getMessage()
+            ], 500);
         }
     }
 }

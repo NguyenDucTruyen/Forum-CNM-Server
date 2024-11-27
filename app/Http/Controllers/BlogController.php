@@ -52,6 +52,22 @@ class BlogController extends Controller
         }
     }
 
+    public function updateStatusBlog(Request $request, $id)
+    {
+        $params = $request;
+
+        try {
+            $blog = Blog::findOrFail($id);
+
+            $result = $this->service->updateStatusBlog($blog, $params);
+            return $result;
+        } catch (ModelNotFoundException $e) {
+            Log::error($e);
+            return response()->json([
+                'message' => 'Blog not found!'
+            ], 404);
+        }
+    }
 
 
 
@@ -104,7 +120,7 @@ class BlogController extends Controller
     }
 
 
-    public function listBlog()
+    public function listBlog11()
     {
         try {
             $result = Blog::orderBy('id', 'desc')->get();
@@ -123,13 +139,35 @@ class BlogController extends Controller
         }
     }
 
+    //có phân trang
+    public function listBlog(Request $request)
+    {
+        // Lấy các tham số từ query string
+        $search = $request->input('search');
+        $perPage = $request->input('per_page', 10); // Số bản ghi mỗi trang, mặc định là 10
+        $sortBy = $request->input('sort_by', 'created_at'); // Mặc định sắp xếp theo created_at
+        $sortOrder = $request->input('sort_order', 'desc'); // Mặc định sắp xếp giảm dần (desc)
+
+        // Query Blog với các mối quan hệ và điều kiện
+        $blogs = Blog::with(['user', 'category'])
+            ->when($search, function ($query, $search) {
+                $query->where('title', 'LIKE', "%$search%");
+            })
+            ->orderBy($sortBy, $sortOrder) // Thêm sắp xếp
+            ->paginate($perPage);
+
+        return response()->json($blogs, 200);
+    }
+
+
     //get by id category
-    public function listBlogCategory($id)
+    public function listBlogCategory1($id)
     {
         try {
             $category = Category::findOrFail($id);
 
             $blogs = $category->blogs;
+
 
             return response()->json([
                 'message' => 'success',
@@ -142,8 +180,30 @@ class BlogController extends Controller
         }
     }
 
+    //có phân trang 
+    public function listBlogCategory(Request $request, $id)
+    {
+        // Lấy các tham số từ query string
+        $search = $request->input('search');
+        $perPage = $request->input('per_page', 10); // Số bản ghi mỗi trang, mặc định là 10
+        $sortBy = $request->input('sort_by', 'created_at'); // Mặc định sắp xếp theo created_at
+        $sortOrder = $request->input('sort_order', 'desc'); // Mặc định sắp xếp giảm dần (desc)
+
+        // Query Blog với các mối quan hệ và điều kiện
+        $blogs = Blog::with(['user', 'category'])
+            ->where('category_id', $id) // Luôn lọc theo category_id
+            ->when($search, function ($query, $search) {
+                // Nếu có search, thêm điều kiện tìm kiếm title
+                $query->where('title', 'LIKE', "%$search%");
+            })
+            ->orderBy($sortBy, $sortOrder) // Thêm sắp xếp
+            ->paginate($perPage);
+
+        return response()->json($blogs, 200);
+    }
+
     //get by id User
-    public function listBlogUser($id)
+    public function listBlogUser1($id)
     {
         try {
             $user = User::findOrFail($id);
@@ -152,7 +212,7 @@ class BlogController extends Controller
 
             return response()->json([
                 'message' => 'success',
-                'date' => $blogs
+                'data' => $blogs
             ], 200);
         } catch (ModelNotFoundException $e) {
             return response()->json([
@@ -161,9 +221,51 @@ class BlogController extends Controller
         }
     }
 
+    //có phân trang
+    public function listBlogUser(Request $request, $id)
+    {
+        // Lấy các tham số từ query string
+        $search = $request->input('search');
+        $perPage = $request->input('per_page', 10); // Số bản ghi mỗi trang, mặc định là 10
+        $sortBy = $request->input('sort_by', 'created_at'); // Mặc định sắp xếp theo created_at
+        $sortOrder = $request->input('sort_order', 'desc'); // Mặc định sắp xếp giảm dần (desc)
+
+        // Query Blog với các mối quan hệ và điều kiện
+        $blogs = Blog::with(['user', 'category'])
+            ->where('user_id', $id) // Luôn lọc theo category_id
+            ->when($search, function ($query, $search) {
+                // Nếu có search, thêm điều kiện tìm kiếm title
+                $query->where('title', 'LIKE', "%$search%");
+            })
+            ->orderBy($sortBy, $sortOrder) // Thêm sắp xếp
+            ->paginate($perPage);
+
+        return response()->json($blogs, 200);
+    }
+
+    //get detail blog
+    public function detailBlog($id)
+    {
+        try {
+            $blog = Blog::findOrFail($id);
+
+            $category = Category::findOrFail($blog->category_id);
+
+            return response()->json([
+                'message' => 'success',
+                "category" => $category->categoryName,
+                'data' => $blog
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Blog not found!'
+            ], 404);
+        }
+    }
+
 
     //listBlogUserDeleted
-    public function listBlogUserDeleted()
+    public function listBlogUserDeleted1()
     {
         try {
             $user = auth()->user();
@@ -187,6 +289,64 @@ class BlogController extends Controller
                 'user_id' => $user->id,
                 'role' => $user->role,
                 'count' => $deletedBlogs->count(),
+                'sql' => $query->toSql(),
+                'bindings' => $query->getBindings()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Retrieved deleted blogs successfully',
+                'data' => $deletedBlogs
+            ], 200);
+        } catch (Exception $e) {
+            Log::error('Error retrieving deleted blogs: ' . $e->getMessage(), [
+                'user_id' => auth()->id(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve deleted blogs',
+                'error' => config('app.debug') ? $e->getMessage() : 'An error occurred'
+            ], 500);
+        }
+    }
+
+    public function listBlogUserDeleted(Request $request)
+    {
+        try {
+            $user = auth()->user();
+
+            // Lấy các tham số từ query string
+            $search = $request->input('search');
+            $perPage = $request->input('per_page', 10); // Số bản ghi mỗi trang, mặc định là 10
+            $sortBy = $request->input('sort_by', 'deleted_at'); // Mặc định sắp xếp theo deleted_at
+            $sortOrder = $request->input('sort_order', 'desc'); // Mặc định sắp xếp giảm dần (desc)
+
+            // Query base để lấy các blog đã xóa
+            $query = Blog::onlyTrashed();
+
+            // Nếu không phải admin, chỉ lấy blog của user đó
+            if ($user->role != 'admin') {
+                $query->where('user_id', $user->id);
+            }
+
+            // Thêm điều kiện tìm kiếm nếu có
+            if ($search) {
+                $query->where('title', 'LIKE', "%$search%");
+            }
+
+            // Thêm sắp xếp
+            $query->orderBy($sortBy, $sortOrder);
+
+            // Thực thi query để lấy kết quả với phân trang
+            $deletedBlogs = $query->paginate($perPage);
+
+            // Log để debug
+            Log::info('Deleted blogs query:', [
+                'user_id' => $user->id,
+                'role' => $user->role,
+                'count' => $deletedBlogs,
                 'sql' => $query->toSql(),
                 'bindings' => $query->getBindings()
             ]);

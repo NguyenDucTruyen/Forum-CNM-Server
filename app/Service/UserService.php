@@ -16,6 +16,9 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Models\PasswordResetOtp;
+use App\Models\SendOTP;
 
 class UserService
 {
@@ -34,23 +37,74 @@ class UserService
     public function create($params)
     {
         try {
-            //insert vô db trc ,tk chưa đc verify
+            // Kiểm tra OTP
+            $otpRecord = SendOTP::where('email', $params['email'])->first();
+
+            if (!$otpRecord || !Hash::check($params['otp'], $otpRecord->otp)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'OTP không hợp lệ hoặc đã hết hạn'
+                ], 400);
+            }
+
+            if ($otpRecord->created_at->addMinutes(15)->isPast()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'OTP đã hết hạn'
+                ], 400);
+            }
+
+            //insert vô db
             $user = $this->model->create($params);
+
+            // Xóa OTP sau khi reset
+            $otpRecord->delete();
         } catch (Exception $exception) {
             Log::error($exception);
             return false;
         }
-        #hoặc viết kiểu truy vấn
-        # DB::table('tên bảng')->insert('câu lệnh SQL')
-
-        // Gửi email xác thực
-        //event(new Registered($user));
-        $user->sendEmailVerificationNotification();
 
         return response()->json([
-            'message' => 'Register Successful. Please check your email to verify.'
+            'message' => 'Register Successful. Please login to use.',
+            'data'=>$user
         ], 200);
     }
+
+    //sendOPT register
+    public function sendOTP($params)
+    {
+        try {
+            // Tạo OTP 6 số
+            $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+            // Lưu OTP vào database
+            SendOTP::updateOrCreate(
+                ['email' => $params['email']],
+                [
+                    'email' => $params['email'],
+                    'otp' => Hash::make($otp),
+                    'created_at' => now()
+                ]
+            );
+
+            Mail::raw("Mã OTP của bạn là: {$otp}. Mã này có hiệu lực trong 15 phút.", function ($message) use ($params) {
+                $message->to($params['email'])->subject('Mã OTP đăng ký tài khoảnkhoản');
+            });
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unable to send OTP link',
+                'error' => $e->getMessage()
+            ], 400);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'OTP link sent to your email'
+        ], 200);
+    }
+
+
 
     //ham update
     public function update($user, $params)
@@ -103,12 +157,6 @@ class UserService
             ], 404);
         }
 
-        // Kiểm tra email đã được xác thực
-        if (!$user->hasVerifiedEmail()) {
-            return response()->json([
-                'message' => 'Email has not verified yet'
-            ], 404);
-        }
 
         //create TOKEN by sanctum
         //$token = $user->createToken('user')->plainTextToken;
@@ -193,18 +241,29 @@ class UserService
     }
 
 
-    //send email forgot pass
+
     public function forgotPass($params)
     {
         try {
             //check email first
             $user = $this->model->where('email', $params['email'])->first();
 
-            // Tạo token mới
-            $token = $this->modalPass->createToken($params['email']);
+            // Tạo OTP 6 số
+            $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
-            // Gửi email
-            $user->notify(new ResetPassword($token));
+            // Lưu OTP vào database
+            PasswordResetOtp::updateOrCreate(
+                ['email' => $params['email']],
+                [
+                    'email' => $params['email'],
+                    'otp' => Hash::make($otp),
+                    'created_at' => now()
+                ]
+            );
+
+            Mail::raw("Mã OTP của bạn là: {$otp}. Mã này có hiệu lực trong 15 phút.", function ($message) use ($params) {
+                $message->to($params['email'])->subject('Mã OTP đặt lại mật khẩu');
+            });
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
@@ -220,20 +279,24 @@ class UserService
     }
 
 
-    //reset Pass
     public function resetPass($params)
     {
         try {
-            // Kiểm tra token hợp lệ
-            $reset = $this->modalPass->findValidToken(
-                $params['token'],
-                $params['email']
-            );
+            // Kiểm tra OTP
+            $otpRecord = PasswordResetOtp::where('email', $params['email'])->first();
 
-            if (!$reset) {
+            if (!$otpRecord || !Hash::check($params['otp'], $otpRecord->otp)) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Invalid token or expired'
+                    'message' => 'OTP không hợp lệ hoặc đã hết hạn'
+                ], 400);
+            }
+
+            // Kiểm tra OTP còn hiệu lực (ví dụ: trong vòng 15 phút)
+            if ($otpRecord->created_at->addMinutes(15)->isPast()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'OTP đã hết hạn'
                 ], 400);
             }
 
@@ -244,8 +307,8 @@ class UserService
 
             $user->save();
 
-            // Xóa token đã sử dụng
-            $this->modalPass->invalidateToken($params['email']);
+            // Xóa OTP sau khi reset
+            $otpRecord->delete();
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
