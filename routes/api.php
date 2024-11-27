@@ -11,7 +11,7 @@ use App\Http\Controllers\ReplyController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\StripeController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -105,3 +105,7 @@ Route::put('/activeUser',[AdminController::class,'activeUser'])->middleware(['au
 
 #change status Blog// k cần thiết, chưa viết
 Route::put('/updateBlogStatus',[BlogController::class,'updateBlog'])->middleware(['auth:api', 'refresh.token', 'role:admin']);
+
+// Stripe 
+Route::post('/create-checkout-session', [StripeController::class, 'createCheckoutSession']);
+Route::get('/checkout-session', [StripeController::class, 'getSessionDetails']);
