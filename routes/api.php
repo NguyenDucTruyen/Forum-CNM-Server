@@ -104,6 +104,8 @@ Route::get('/getReactionBlog/{id}',[ReactionController::class,'listReactionBlog'
 //ADMIN
 Route::put('/activeUser',[AdminController::class,'activeUser'])->middleware(['auth:api', 'role:admin']);
 
+#get blog pending + search + paginate
+Route::get('/getListPendingBlog',[BlogController::class,'listPendingBlog'])->middleware(['auth:api', 'role:admin']);
 // Stripe 
 Route::post('/create-checkout-session', [StripeController::class, 'createCheckoutSession']);
 Route::get('/checkout-session', [StripeController::class, 'getSessionDetails']);

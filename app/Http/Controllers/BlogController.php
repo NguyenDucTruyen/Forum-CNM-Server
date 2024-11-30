@@ -158,6 +158,27 @@ class BlogController extends Controller
 
         // Query Blog với các mối quan hệ và điều kiện
         $blogs = Blog::with(['user', 'category'])
+            ->where('statusBlog', 'accepted')
+            ->when($search, function ($query, $search) {
+                $query->where('title', 'LIKE', "%$search%");
+            })
+            ->orderBy($sortBy, $sortOrder) // Thêm sắp xếp
+            ->paginate($perPage);
+
+        return response()->json($blogs, 200);
+    }
+    
+    public function listPendingBlog(Request $request)
+    {
+        // Lấy các tham số từ query string
+        $search = $request->input('search');
+        $perPage = $request->input('per_page', 10); // Số bản ghi mỗi trang, mặc định là 10
+        $sortBy = $request->input('sort_by', 'created_at'); // Mặc định sắp xếp theo created_at
+        $sortOrder = $request->input('sort_order', 'desc'); // Mặc định sắp xếp giảm dần (desc)
+
+        // Query Blog với các mối quan hệ và điều kiện
+        $blogs = Blog::with(['user', 'category'])
+            ->where('statusBlog', 'pending')
             ->when($search, function ($query, $search) {
                 $query->where('title', 'LIKE', "%$search%");
             })
@@ -200,6 +221,7 @@ class BlogController extends Controller
         // Query Blog với các mối quan hệ và điều kiện
         $blogs = Blog::with(['user', 'category'])
             ->where('category_id', $id) // Luôn lọc theo category_id
+            ->where('statusBlog', 'accepted')
             ->when($search, function ($query, $search) {
                 // Nếu có search, thêm điều kiện tìm kiếm title
                 $query->where('title', 'LIKE', "%$search%");
@@ -241,6 +263,7 @@ class BlogController extends Controller
         // Query Blog với các mối quan hệ và điều kiện
         $blogs = Blog::with(['user', 'category'])
             ->where('user_id', $id) // Luôn lọc theo category_id
+            ->where('statusBlog', 'accepted')
             ->when($search, function ($query, $search) {
                 // Nếu có search, thêm điều kiện tìm kiếm title
                 $query->where('title', 'LIKE', "%$search%");
