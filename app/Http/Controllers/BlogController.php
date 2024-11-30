@@ -92,7 +92,7 @@ class BlogController extends Controller
 
             $user_token = auth()->user();
 
-            if ($user_token->role != 'admin' && $user_blog->id != $user_token->id) {
+            if ($user_token->roleName != 'admin' && $user_blog->id != $user_token->id) {
                 return response()->json([
                     'message' => 'You are not permission of this blog'
                 ], 403);
