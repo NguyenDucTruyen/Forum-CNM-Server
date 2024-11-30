@@ -142,7 +142,6 @@ class UserService
         // Thêm log để kiểm tra password trong DB
         Log::info('Password in DB: ' . $user->password);
         Log::info('Password input: ' . $params['password']);
-
         //check hash password
         $checkPass = Hash::check($params['password'], $user->password);
 
@@ -155,6 +154,12 @@ class UserService
                 'message' => 'Email or Password is incorrect',
                 'code' => '404'
             ], 404);
+        }
+        
+        if($user->isActive == false) {
+            return response()->json([
+                'message' => 'Your account has been deactivated. Please contact support for further assistance.'
+            ], 403);
         }
 
 

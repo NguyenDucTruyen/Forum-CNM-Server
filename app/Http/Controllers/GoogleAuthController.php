@@ -24,7 +24,7 @@ class GoogleAuthController extends Controller
 
             // Kiểm tra xem người dùng đã tồn tại trong database hay chưa
             $user = User::where('google_id', $googleUser->getId())->first();
-
+            
             if (!$user) {
                 // Nếu người dùng chưa có trong DB, tạo mới
                 $user = User::create([
@@ -33,6 +33,12 @@ class GoogleAuthController extends Controller
                     'google_id' => $googleUser->getId(),
                     'profileImage' => $googleUser->getAvatar(),
                 ]);
+            }
+            
+            if($user->isActive == false) {
+                return response()->json([
+                    'message' => 'Your account has been deactivated. Please contact support for further assistance.'
+                ], 403);
             }
 
             // Tạo token cho người dùng khi đăng nhập thành công
