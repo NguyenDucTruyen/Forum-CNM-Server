@@ -26,8 +26,6 @@ class SignInRequest extends FormRequest
     {
         return [
             //
-            'firstName'=> ['required'],
-            'lastName'=>['required'],
             'email'=>['required','email','unique:users,email'],
             'password'=>['required','min:8'],
             'otp'=>['required']

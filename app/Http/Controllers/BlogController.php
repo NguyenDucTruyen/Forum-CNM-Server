@@ -28,12 +28,20 @@ class BlogController extends Controller
     {
         $params = $addRequest->validated();
 
+        $countBlog = Blog::where('user_id', auth()->id())->count();
+        $user = auth()->user();
+
+        if (is_null($user->upgrade_at) && $countBlog >= 5) {
+            return response()->json([
+                'message' => 'Please upgrade to a premium account to create more posts.You have reached the maximum limit of 5 posts as a basic user. '
+            ], 403);
+        }
+
         $result = $this->service->createBlog($params);
 
         return $result;
     }
 
-    //update
     //update
     public function updateBlog(Request $request, $id)
     {

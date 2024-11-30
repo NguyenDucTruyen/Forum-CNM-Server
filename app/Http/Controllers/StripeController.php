@@ -52,7 +52,7 @@ class StripeController extends Controller
                         'data' => $user,
                     ]);
                 } else {
-                    return response()->json(['error' => 'User not found'], 404);
+                    return response()->json(['error' => 'Email not found, please check your email address'], 404);
                 }
             } else {
                 return response()->json(['error' => 'Invalid session details'], 400);
