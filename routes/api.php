@@ -122,4 +122,5 @@ Route::delete('/deleteCategory/{id}',[CategoryController::class,'destroyCategory
 Route::put('/updateBlogStatus/{id}',[BlogController::class,'updateStatusBlog'])->middleware(['auth:api', 'role:admin']);
 
 // Gemini
-Route::post('/generate-text', [GeminiController::class, 'generateText'])->middleware(['auth:api']);
+Route::post('/chat/{blogId}', [GeminiController::class, 'ChatWithGemini'])->middleware(['auth:api']);
+Route::get('/chat/{blogId}', [GeminiController::class, 'GetChatHistory'])->middleware(['auth:api']);
