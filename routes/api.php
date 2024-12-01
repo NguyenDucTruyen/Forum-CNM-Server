@@ -12,6 +12,7 @@ use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\StripeController;
+use App\Http\Controllers\GeminiController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -119,3 +120,6 @@ Route::delete('/deleteCategory/{id}',[CategoryController::class,'destroyCategory
 
 #change status Blog// 
 Route::put('/updateBlogStatus/{id}',[BlogController::class,'updateStatusBlog'])->middleware(['auth:api', 'role:admin']);
+
+// Gemini
+Route::post('/generate-text', [GeminiController::class, 'generateText'])->middleware(['auth:api']);
