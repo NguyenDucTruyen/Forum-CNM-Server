@@ -17,6 +17,14 @@ class GeminiController extends Controller
     public function ChatWithGemini(Request $request, $blogId)
     {
         try {
+            $user = auth()->user();
+
+            if (is_null($user->upgrade_at)) {
+                return response()->json([
+                    'message' => 'Please upgrade to a premium account to use premium feature (chat with AI). '
+                ], 403);
+            }
+            
             $request->validate([
                 'message' => 'required|string',
             ]);
