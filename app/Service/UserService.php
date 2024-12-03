@@ -74,6 +74,10 @@ class UserService
     public function sendOTP($params)
     {
         try {
+            $user = User::where('email', $params['email'])->first();
+            if ($user) {
+                return response()->json(['error' => 'Email has already been registered. Please try using a different email address.'], 404);
+            }
             // Tạo OTP 6 số
             $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
