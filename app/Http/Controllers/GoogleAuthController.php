@@ -21,14 +21,13 @@ class GoogleAuthController extends Controller
 
             // Lấy thông tin người dùng từ Google bằng cách sử dụng access_token
             $googleUser = Socialite::driver('google')->userFromToken($accessToken);
-
-            $user = User::where('email', $googleUser->getEmail())->first();
-            if ($user) {
-                return response()->json(['error' => 'Email has already been registered. Please try using a different email address.'], 404);
+            
+            $user = User::where('email', $googleUser->getEmail())->first(); 
+           
+            if ($user && is_null($user->google_id)) {
+                return response()->json(['error' => 'Your account was registered with email and password, so Google Login is not available'], 403);
             }
 
-            // Kiểm tra xem người dùng đã tồn tại trong database hay chưa
-            $user = User::where('google_id', $googleUser->getId())->first();
             
             if (!$user) {
                 // Nếu người dùng chưa có trong DB, tạo mới
@@ -37,10 +36,11 @@ class GoogleAuthController extends Controller
                     'email' => $googleUser->getEmail(),
                     'google_id' => $googleUser->getId(),
                     'profileImage' => $googleUser->getAvatar(),
+                    'isActive' => true,
                 ]);
             }
-            
-            if($user->isActive == false) {
+
+            if(!$user->isActive) {
                 return response()->json([
                     'message' => 'Your account has been deactivated. Please contact support for further assistance.'
                 ], 403);
